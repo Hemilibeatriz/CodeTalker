@@ -22,7 +22,7 @@ from subprocess import call
 os.environ['PYOPENGL_PLATFORM'] = 'egl' #egl osmesa
 import pyrender
 import trimesh
-from psbody.mesh import Mesh
+import trimesh #from psbody.mesh import Mesh
 
 
 # The implementation of rendering is borrowed from VOCA: https://github.com/TimoBolkart/voca/blob/master/utils/rendering.py
@@ -38,8 +38,9 @@ def render_mesh_helper(args,mesh, t_center, rot=np.zeros(3), tex_img=None, z_off
 
     frustum = {'near': 0.01, 'far': 3.0, 'height': 800, 'width': 800}
 
-    mesh_copy = Mesh(mesh.v, mesh.f)
-    mesh_copy.v[:] = cv2.Rodrigues(rot)[0].dot((mesh_copy.v-t_center).T).T+t_center
+    #mesh_copy = Mesh(mesh.v, mesh.f)
+    mesh_copy = trimesh.Trimesh(vertices=mesh.vertices.copy(), faces=mesh.faces, process=False)
+    mesh_copy.vertices[:] = cv2.Rodrigues(rot)[0].dot((mesh_copy.vertices-t_center).T).T+t_center
     
     intensity = 2.0
 
@@ -51,7 +52,7 @@ def render_mesh_helper(args,mesh, t_center, rot=np.zeros(3), tex_img=None, z_off
             )
 
 
-    tri_mesh = trimesh.Trimesh(vertices=mesh_copy.v, faces=mesh_copy.f)
+    tri_mesh = trimesh.Trimesh(vertices=mesh_copy.vertices, faces=mesh_copy.faces)
     render_mesh = pyrender.Mesh.from_trimesh(tri_mesh, material=primitive_material,smooth=True)
   
     if args.background_black:
@@ -181,7 +182,11 @@ def test(model, wav_file, save_folder, condition, subject):
          
     print("rendering: ", test_name)
                  
-    template = Mesh(filename=template_file)
+    #template = Mesh(filename=template_file)
+    template_trimesh = trimesh.load(template_file, process=False)
+    template_vertices = template_trimesh.vertices
+    template_faces = template_trimesh.faces
+
     predicted_vertices = np.load(predicted_vertices_path)
     predicted_vertices = np.reshape(predicted_vertices,(-1,cfg.vertice_dim//3,3))
 
@@ -196,7 +201,8 @@ def test(model, wav_file, save_folder, condition, subject):
     center = np.mean(predicted_vertices[0], axis=0)
 
     for i_frame in range(num_frames):
-        render_mesh = Mesh(predicted_vertices[i_frame], template.f)
+        #render_mesh = Mesh(predicted_vertices[i_frame], template.f)
+        render_mesh = trimesh.Trimesh(vertices=predicted_vertices[i_frame],faces=template_faces,process=False)
         pred_img = render_mesh_helper(cfg,render_mesh, center)
         pred_img = pred_img.astype(np.uint8)
         writer.write(pred_img)
@@ -218,4 +224,5 @@ def test(model, wav_file, save_folder, condition, subject):
 
 if __name__ == '__main__':
     main()
+
 

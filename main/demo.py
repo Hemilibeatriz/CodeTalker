@@ -18,7 +18,8 @@ cfg = get_parser()
 
 import tempfile
 from subprocess import call
-os.environ['PYOPENGL_PLATFORM'] = 'osmesa' #egl
+# osmesa doesn´t work in Google Colab
+os.environ['PYOPENGL_PLATFORM'] = 'egl' #egl osmesa
 import pyrender
 import trimesh
 from psbody.mesh import Mesh
@@ -217,3 +218,4 @@ def test(model, wav_file, save_folder, condition, subject):
 
 if __name__ == '__main__':
     main()
+
